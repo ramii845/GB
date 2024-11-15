@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Auteur;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class AuteurController extends Controller
 {
@@ -18,8 +19,12 @@ class AuteurController extends Controller
 
             $auteur=Auteur::all();
             return response()->json($auteur);
-        } catch(\Exception $e){
-return response()->json("impossible d'afficher les donneé");
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la récupération des auteurs: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Impossible d\'afficher les données',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
