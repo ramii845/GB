@@ -27,7 +27,7 @@ class Livre extends Model
         }
         public function auteur()
         {
-        return $this->belongsTo(Categorie::class,"auteurID");
+        return $this->belongsTo(Auteur::class,"auteurID");
         }
        
          
