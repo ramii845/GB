@@ -61,5 +61,20 @@ class LivreController extends Controller
     $livres->delete();
     return response()->json('livre supprimée !');
     }
-    
+    public function articlesPaginate()
+{
+try {
+$perPage = request()->input('pageSize', 10);
+// Récupère la valeur dynamique pour la pagination
+$livres = Livre::with('auteur')->paginate($perPage);
+// Retourne le résultat en format JSON API
+return response()->json([
+'products' => $livres->items(), // Les livres paginés
+'totalPages' => $livres->lastPage(), // Le nombre de pages
+]);
+} catch (\Exception $e) {
+return response()->json("Selection impossible {$e->getMessage()}");
+}
+}
+
 }

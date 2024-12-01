@@ -18,3 +18,5 @@ Route::middleware('api')->group(function () {
         Route::resource('auteurs',AuteurController::class);
         
     });
+    Route::get('/livres/liv/articlespaginate', [LivreController::class,
+'articlesPaginate']);
