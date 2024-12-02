@@ -21,8 +21,15 @@ Route::middleware('api')->group(function () {
         
     });
     Route::get('/livres/liv/articlespaginate', [LivreController::class,'articlesPaginate']);
-    Route::post('/login', [LoginController::class, 'login']);
-Route::post('/register', [RegisterController::class, 'register']);
-Route::post('/logout', [LoginController::class, 'logout']);
+
+    Route::middleware(('api'))->group(function(){
+    Route::resource('/login', LoginController::class );
+  }); 
+  Route::middleware(('api'))->group(function(){
+Route::resource('/register', RegisterController::class);
+}); 
+Route::middleware(('api'))->group(function(){
+Route::resource('/logout', LoginController::class);
+}); 
 
 
