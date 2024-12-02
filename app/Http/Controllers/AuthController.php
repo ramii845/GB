@@ -18,21 +18,28 @@ class AuthController extends Controller
      */ 
     public function login(Request $request){ 
          
-        $input = $request->only('email', 'password'); 
-        $jwt_token = null; 
-   
-        if (!$jwt_token = JWTAuth::attempt($input)) { 
-            return response()->json([ 
-                'success' => false, 
-                'message' => 'Invalid Email or Password', 
-            ], Response::HTTP_UNAUTHORIZED); 
-        } 
-   
-        return response()->json([ 
-            'success' => true, 
-            'token' => $jwt_token, 
-            'user' => auth()->user(),  
-        ]); 
+{
+    // Validation des données envoyées
+    $request->validate([
+        'email' => 'required|string|email|max:100',
+        'password' => 'required|string|min:6',
+    ]);
+
+    // Tentative de connexion avec les informations fournies
+    if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
+        // Si l'utilisateur est authentifié, retourner une réponse avec les informations de l'utilisateur
+        $user = Auth::user();
+        return response()->json([
+            'message' => 'Login successful.',
+            'user' => $user
+        ], 200);
+    }
+
+    // Si les informations sont incorrectes, retourner une erreur
+    return response()->json([
+        'message' => 'Invalid credentials.',
+    ], 401); // Code HTTP 401 : Unauthorized
+}
          
     } 
  
@@ -42,80 +49,42 @@ class AuthController extends Controller
      * @return \Illuminate\Http\JsonResponse 
      */ 
  
-    public function register(Request $request) { 
-        $validator = Validator::make($request->all(), [ 
-            'name' => 'required|string|between:2,100', 
-            'email' => 'required|string|email|max:100|unique:users', 
-            'password' => 'required|string|min:4', 
-            'role' => 'required|string|in:admin,user',  // Role doit être 
+     public function register(Request $request)
+     {
+         // Validation des données envoyées
+    $validator = Validator::make($request->all(), [
+        'name' => 'required|string|between:2,100', 
+        'email' => 'required|string|email|max:100|unique:users,email', // Ajouter le champ email spécifiquement
+        'password' => 'required|string|min:6', // Minimum 6 caractères pour plus de sécurité
+        'role' => 'required|string|in:admin,user',  // Role doit être admin ou user
+    ]);
 
-            
+    // Si la validation échoue, renvoyer un message d'erreur
+    if ($validator->fails()) {
+        return response()->json($validator->errors()->toJson(), 400); 
+    }
 
-        ]); 
+    // Création de l'utilisateur avec mot de passe crypté
+    $user = User::create(array_merge(
+        $validator->validated(),
+        ['password' => bcrypt($request->password)]
+    ));
+
+    // Envoi de l'email de vérification (à compléter avec une fonction réelle)
+    // Mail::to($user->email)->send(new VerificationEmail($user));
+
+    // Réponse de succès avec message
+    return response()->json([
+        'message' => 'User successfully registered. Please verify your email.',
+        'user' => $user
+    ], 201);
+}
+
      
-        if($validator->fails()){ 
-            return response()->json($validator->errors()->toJson(), 400); 
-        } 
-     
-        $user = User::create(array_merge( 
-                    $validator->validated(), 
-                    ['password' => bcrypt($request->password)], 
-                    ['isActive' => false] // Initialiser isActive à false 
-                )); 
-     
-        // Envoyer l'email de vérification 
  
-        $verificationUrl = route('verify.email', ['email' => $user->email]); 
-         
-        Mail::send([], [], function ($message) use ($user, $verificationUrl) { 
-            $message->to($user->email) 
-                    ->subject('Verification de votre email') 
-                    ->html("<h2>{$user->name}! Merci de vous être inscrit sur 
-notre site</h2> 
-                            <h4>Veuillez vérifier votre email pour 
-continuer...</h4> 
-                            <a href='{$verificationUrl}'>Cliquez ici</a>"); 
-        }); 
+   
  
-    return response()->json([ 
-        'message' => 'User successfully registered. Please verify your 
-email.', 
-        'user' => $user 
-    ], 201); 
-     
-        return response()->json([ 
-            'message' => 'User successfully registered. Please verify your email.', 
-            'user' => $user 
-        ], 201); 
-    } 
- 
-    //Method verify Email 
- 
-    public function verifyEmail(Request $request) { 
-        $user = User::where('email', $request->query('email'))->first(); 
-     
-        if (!$user) { 
-            return response()->json([ 
-                'success' => false, 
-                'message' => 'User not found' 
-            ], 404); 
-        } 
-     
-        if ($user->isActive) { 
-            return response()->json([ 
-                'success' => true, 
-                'message' => 'Account already activated' 
-            ]); 
-        } 
-     
-        $user->isActive = true; 
-        $user->save(); 
-     
-        return response()->json([ 
-            'success' => true, 
-            'message' => 'Account activated successfully' 
-        ]); 
-    } 
+    
      
     /** 
      * Log the user out (Invalidate the token). 
